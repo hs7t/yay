@@ -1,0 +1,21 @@
+% yay 0.1
+% title "Example script"
+% revision 1
+% supports *
+
+! clone git@github.com:hs7t/tfs2
+! navto tfs2
+% mainDirectory .
+/:
+    this is a comment!
+    that line above could also be
+    % @ .
+    or
+    % @ workingDirectory
+    ...although that's not pretty
+;
+
+? system == 'windows':
+    $ cd C:\
+    $ echo "Something something"
+;
