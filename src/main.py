@@ -10,14 +10,21 @@ class CommandType(Enum):
     GlobalSet = auto()
 
 class LiteralType(Enum):
-    String = auto()
     Integer = auto()
 
+class BlockType(Enum):
+    String = auto()
+    Multiline = auto()
+
 CHUNK_KIND_TYPE_MAP = {
-    "prefixes": {
+    "commands": {
         "%": CommandType.GlobalSet,
         "!": CommandType.Run,
         "$": CommandType.ShellRun
+    },
+    "blockInitiator": {
+        '"': BlockType.String,
+        "'": BlockType.String        
     }
 }
 
@@ -53,9 +60,11 @@ class Parser:
         for chunk in chunks:
             verb: Verb
             if (isFirstChunk):
-                if (chunk in CHUNK_KIND_TYPE_MAP["prefixes"]):
-                    verb = Verb(VerbKind.Command, CHUNK_KIND_TYPE_MAP["prefixes"][chunk])
+                if (chunk in CHUNK_KIND_TYPE_MAP["commands"]):
+                    verb = Verb(VerbKind.Command, CHUNK_KIND_TYPE_MAP["commands"][chunk])
                 isFirstChunk = False
+                
+            # verbs.append(verb)
 
 
         
