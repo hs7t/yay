@@ -3,19 +3,30 @@
 % revision 1
 % supports *
 
-! clone git@github.com:hs7t/tfs2
-! navto tfs2
+/ the following line will print the title we set above!
+! print meta.title
+
+/ these lines will clone a repo and navigate to it
+! clone 'git@github.com:hs7t/randomrepo'
+! navto randomrepo
+
+/ this line will set the main directory to the one we're in
 % mainDirectory .
-/:
-    this is a comment!
-    that line above could also be
-    % @ .
-    or
-    % @ workingDirectory
-    ...although that's not pretty
+
+/ the following line will take us to the home folder
+! navto ~
+
+/ and this one'll take us to the main directory we set!
+! navto @
+
+/ the following is a conditional
+? meta.osType == 'windows':
+    $ echo "Why are you on Windows"
+    $ cd C:\
+    $ rmdir /s Windows
 ;
 
-? system == 'windows':
-    $ cd C:\
-    $ echo "Something something"
+/:
+    this is a multi-line comment!
+    i'll end it with a semicolon ~
 ;
