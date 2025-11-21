@@ -1,5 +1,6 @@
 from enum import Enum, auto
 from typing import Literal
+import re
 
 class TokenType(Enum):
     Literal = auto()
@@ -75,6 +76,8 @@ def isNumber(string: str):
 
     return numberable
 
+def isWhiteSpace(string: str):
+    return string.isspace() or len(string) == 0
 
 class Tokenizer:
     def __init__ (self, text: str):
@@ -87,55 +90,86 @@ class Tokenizer:
         return [line for line in lines if len(line) != 0]
 
     def getTokens(self):
-        blockType: None|BlockTokenType = None
+        blockStartingTokenType: None|BlockTokenType = None
         tokens = []
 
         for line in self.getLines():
-            isFirstChunk = True
+            isFirstChunkInLine = True
             lineTokens: list[Token] = []
 
-            for chunk in line.split(" "):
-                if (isFirstChunk):
-                    if (chunk in CHUNK_TOKEN_TYPE_MAP['commands']):
+            chunks = re.split(r'(\S+)', line)
+            tokenContent = ""
+
+            for chunk in chunks:
+                if blockStartingTokenType == None and isWhiteSpace(chunk):
+                    continue
+
+                if (isFirstChunkInLine):
+                    chunkIsCommand = chunk in CHUNK_TOKEN_TYPE_MAP['commands']
+                    if (chunkIsCommand):
                         lineTokens.append(
                             Token(type=TokenType.Command, text=chunk)
                         )
                         continue
-                    isFirstChunk = False
+                    isFirstChunkInLine = False
 
-                if chunk in CHUNK_TOKEN_TYPE_MAP['multilineBlockStart']:
+                chunkIsMultilineBlockStart = (
+                    chunk in CHUNK_TOKEN_TYPE_MAP['multilineBlockStart']
+                )
+                chunkFirstCharIsMultilineBlockStart = (
+                    chunk[0] in CHUNK_TOKEN_TYPE_MAP['multilineBlockStart']
+                )
+
+                if (
+                    chunkIsMultilineBlockStart 
+                    or chunkFirstCharIsMultilineBlockStart
+                ):
                     lineTokens.append(
                         Token(type=TokenType.MultilineBlockStart, text=chunk)
                     )
-                    blockType = TokenType.MultilineBlockStart
+                    blockStartingTokenType = TokenType.MultilineBlockStart
                     continue
-                elif chunk in CHUNK_TOKEN_TYPE_MAP['multilineBlockEnd']:
+                elif (
+                    chunk in CHUNK_TOKEN_TYPE_MAP['multilineBlockEnd']
+                    or chunk[-1] in CHUNK_TOKEN_TYPE_MAP['multilineBlockEnd']
+                ):
                     lineTokens.append(
                         Token(type=TokenType.MultilineBlockEnd, text=chunk)
                     )
-                    blockType = None
+                    blockStartingTokenType = None
                     continue
+                
+                chunkIsStringBlockStart = (
+                    chunk in CHUNK_TOKEN_TYPE_MAP['stringBlockStart']
+                )
+                chunkIsStringBlockEnd = (
+                    chunk in CHUNK_TOKEN_TYPE_MAP['stringBlockEnd']
+                )
 
                 if (
-                    (chunk in CHUNK_TOKEN_TYPE_MAP['stringBlockStart'])
-                    and (blockType is not TokenType.StringBlockStart)
+                    chunkIsStringBlockStart
+                    and (blockStartingTokenType is not TokenType.StringBlockStart)
                 ):
                     lineTokens.append(
                         Token(type=TokenType.StringBlockStart, text=chunk)
                     )
-                    blockType = TokenType.StringBlockStart
+                    blockStartingTokenType = TokenType.StringBlockStart
                     continue
-                elif chunk in CHUNK_TOKEN_TYPE_MAP['stringBlockEnd']:
+                elif chunkIsStringBlockEnd:
+                    lineTokens.append(
+                        Token(type=TokenType.Literal, text=tokenContent)
+                    )
                     lineTokens.append(
                         Token(type=TokenType.StringBlockEnd, text=chunk)
                     )
-                    blockType = None
+
+                    blockStartingTokenType = None
+                    tokenContent = ""
+
                     continue
 
-                if (blockType is TokenType.StringBlockStart):
-                    lineTokens.append(
-                        Token(type=TokenType.Literal, text=chunk)
-                    )
+                if (blockStartingTokenType is TokenType.StringBlockStart):
+                    tokenContent += chunk
                     continue
                 elif isNumber(chunk):
                     lineTokens.append(
@@ -153,7 +187,7 @@ class Tokenizer:
 
 code = """
 % yay 0.1
-! print " meta title "
+! print "meta title"
 """
 
 tokens: list[Token] = Tokenizer(code).getTokens()
