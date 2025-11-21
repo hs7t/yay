@@ -38,6 +38,7 @@ CHUNK_TOKEN_TYPE_MAP = {
         "%": TokenType.Command,
         "!": TokenType.Command,
         "$": TokenType.Command,
+        "/": TokenType.Command,
     },
     "stringBlockStart": {
         '"': TokenType.StringBlockStart,
@@ -109,9 +110,11 @@ class Tokenizer:
             tokenContent = ""
 
             for chunk in chunks:
+                # not on block? skip whitespace chunks
                 if blockStartingTokenType is None and isWhiteSpace(chunk):
                     continue
 
+                # check for commands
                 if isFirstChunkInLine:
                     chunkIsCommand = chunk in CHUNK_TOKEN_TYPE_MAP["commands"]
                     if chunkIsCommand:
