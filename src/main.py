@@ -1,6 +1,7 @@
+import re
 from enum import Enum, auto
 from typing import Literal
-import re
+
 
 class TokenType(Enum):
     Literal = auto()
@@ -15,18 +16,22 @@ class TokenType(Enum):
     SetStart = auto()
     SetEnd = auto()
 
+
 class Token:
     def __init__(self, type: TokenType, text: str):
         self.type = type
         self.text = text
+
 
 class CommandType(Enum):
     Run = auto()
     ShellRun = auto()
     GlobalSet = auto()
 
+
 class LiteralType(Enum):
     Integer = auto()
+
 
 CHUNK_TOKEN_TYPE_MAP = {
     "commands": {
@@ -51,11 +56,12 @@ CHUNK_TOKEN_TYPE_MAP = {
 }
 
 BlockTokenType = Literal[
-    TokenType.MultilineBlockStart, 
+    TokenType.MultilineBlockStart,
     TokenType.MultilineBlockEnd,
     TokenType.StringBlockStart,
-    TokenType.StringBlockEnd
+    TokenType.StringBlockEnd,
 ]
+
 
 def isNumber(string: str):
     numberable: bool = False
@@ -76,11 +82,13 @@ def isNumber(string: str):
 
     return numberable
 
+
 def isWhiteSpace(string: str):
     return string.isspace() or len(string) == 0
 
+
 class Tokenizer:
-    def __init__ (self, text: str):
+    def __init__(self, text: str):
         self.text = text
         self.chunks = text.split(" ")
         self.tokens: list[Token] = []
@@ -90,104 +98,128 @@ class Tokenizer:
         return [line for line in lines if len(line) != 0]
 
     def getTokens(self):
-        blockStartingTokenType: None|BlockTokenType = None
+        blockStartingTokenType: None | BlockTokenType = None
         tokens = []
 
         for line in self.getLines():
             isFirstChunkInLine = True
             lineTokens: list[Token] = []
 
-            chunks = re.split(r'(\S+)', line)
+            chunks = re.split(r"(\S+)", line)
             tokenContent = ""
 
             for chunk in chunks:
-                if blockStartingTokenType == None and isWhiteSpace(chunk):
+                if blockStartingTokenType is None and isWhiteSpace(chunk):
                     continue
 
-                if (isFirstChunkInLine):
-                    chunkIsCommand = chunk in CHUNK_TOKEN_TYPE_MAP['commands']
-                    if (chunkIsCommand):
-                        lineTokens.append(
-                            Token(type=TokenType.Command, text=chunk)
-                        )
+                if isFirstChunkInLine:
+                    chunkIsCommand = chunk in CHUNK_TOKEN_TYPE_MAP["commands"]
+                    if chunkIsCommand:
+                        lineTokens.append(Token(type=TokenType.Command, text=chunk))
                         continue
                     isFirstChunkInLine = False
 
                 chunkIsMultilineBlockStart = (
-                    chunk in CHUNK_TOKEN_TYPE_MAP['multilineBlockStart']
+                    chunk in CHUNK_TOKEN_TYPE_MAP["multilineBlockStart"]
                 )
                 chunkFirstCharIsMultilineBlockStart = (
-                    chunk[0] in CHUNK_TOKEN_TYPE_MAP['multilineBlockStart']
+                    chunk[0] in CHUNK_TOKEN_TYPE_MAP["multilineBlockStart"]
                 )
 
-                if (
-                    chunkIsMultilineBlockStart 
-                    or chunkFirstCharIsMultilineBlockStart
-                ):
+                if chunkIsMultilineBlockStart or chunkFirstCharIsMultilineBlockStart:
                     lineTokens.append(
                         Token(type=TokenType.MultilineBlockStart, text=chunk)
                     )
                     blockStartingTokenType = TokenType.MultilineBlockStart
                     continue
                 elif (
-                    chunk in CHUNK_TOKEN_TYPE_MAP['multilineBlockEnd']
-                    or chunk[-1] in CHUNK_TOKEN_TYPE_MAP['multilineBlockEnd']
+                    chunk in CHUNK_TOKEN_TYPE_MAP["multilineBlockEnd"]
+                    or chunk[-1] in CHUNK_TOKEN_TYPE_MAP["multilineBlockEnd"]
                 ):
                     lineTokens.append(
                         Token(type=TokenType.MultilineBlockEnd, text=chunk)
                     )
                     blockStartingTokenType = None
                     continue
-                
-                chunkIsStringBlockStart = (
-                    chunk in CHUNK_TOKEN_TYPE_MAP['stringBlockStart']
+
+                wholeChunkIsStringBlockStart = (
+                    chunk in CHUNK_TOKEN_TYPE_MAP["stringBlockStart"]
                 )
-                chunkIsStringBlockEnd = (
-                    chunk in CHUNK_TOKEN_TYPE_MAP['stringBlockEnd']
+                wholeChunkIsStringBlockEnd = (
+                    chunk in CHUNK_TOKEN_TYPE_MAP["stringBlockEnd"]
                 )
 
-                if (
-                    chunkIsStringBlockStart
-                    and (blockStartingTokenType is not TokenType.StringBlockStart)
+                chunkFirstCharIsStringBlockStart = (
+                    chunk[0] in CHUNK_TOKEN_TYPE_MAP["stringBlockStart"]
+                )
+                chunkLastCharIsStringBlockEnd = (
+                    chunk[-1] in CHUNK_TOKEN_TYPE_MAP["stringBlockStart"]
+                )
+
+                if wholeChunkIsStringBlockStart and (
+                    blockStartingTokenType is not TokenType.StringBlockStart
                 ):
                     lineTokens.append(
                         Token(type=TokenType.StringBlockStart, text=chunk)
                     )
                     blockStartingTokenType = TokenType.StringBlockStart
                     continue
-                elif chunkIsStringBlockEnd:
-                    lineTokens.append(
-                        Token(type=TokenType.Literal, text=tokenContent)
-                    )
-                    lineTokens.append(
-                        Token(type=TokenType.StringBlockEnd, text=chunk)
-                    )
+                elif wholeChunkIsStringBlockEnd:
+                    lineTokens.append(Token(type=TokenType.Literal, text=tokenContent))
+                    lineTokens.append(Token(type=TokenType.StringBlockEnd, text=chunk))
 
                     blockStartingTokenType = None
                     tokenContent = ""
 
                     continue
 
-                if (blockStartingTokenType is TokenType.StringBlockStart):
+                if chunkFirstCharIsStringBlockStart:
+                    blockStartingTokenType = TokenType.StringBlockStart
+
+                    foundTokens = []
+                    foundTokens.append(
+                        Token(type=blockStartingTokenType, text=chunk[0])
+                    )
+                    foundTokens.append(Token(type=TokenType.Literal, text=chunk[1:]))
+                    lineTokens = [*lineTokens, *foundTokens]
+
+                    continue
+                if chunkLastCharIsStringBlockEnd:
+                    blockStartingTokenType = None
+
+                    foundTokens = []
+                    foundTokens.append(
+                        Token(type=TokenType.Literal, text=(tokenContent + chunk[:-1]))
+                    )
+                    foundTokens.append(
+                        Token(
+                            type=TokenType.StringBlockEnd,
+                            text=chunk[-1],
+                        )
+                    )
+                    lineTokens = [*lineTokens, *foundTokens]
+
+                    continue
+
+                if blockStartingTokenType is TokenType.StringBlockStart:
                     tokenContent += chunk
                     continue
+
                 elif isNumber(chunk):
-                    lineTokens.append(
-                        Token(type=TokenType.Literal, text=chunk)
-                    )
+                    lineTokens.append(Token(type=TokenType.Literal, text=chunk))
                     continue
                 else:
-                    lineTokens.append(
-                        Token(type=TokenType.Reference, text=chunk)
-                    )
+                    lineTokens.append(Token(type=TokenType.Reference, text=chunk))
                     continue
 
             tokens = [*tokens, *lineTokens]
         return tokens
 
+
 code = """
 % yay 0.1
-! print "meta title"
+! print "meow title"
+% me "duck person"
 """
 
 tokens: list[Token] = Tokenizer(code).getTokens()
