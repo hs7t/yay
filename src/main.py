@@ -1,8 +1,18 @@
 from enum import Enum, auto
 
-class VerbKind(Enum):
+class TokenType(Enum):
     Literal = auto()
+    Reference = auto()
     Command = auto()
+    BlockStart = auto()
+    BlockEnd = auto()
+    SetStart = auto()
+    SetEnd = auto()
+
+class Token:
+    def __init__(self, type: TokenType, text: str):
+        self.type = type
+        self.text = text
 
 class CommandType(Enum):
     Run = auto()
@@ -16,62 +26,105 @@ class BlockType(Enum):
     String = auto()
     Multiline = auto()
 
-CHUNK_KIND_TYPE_MAP = {
+CHUNK_TOKEN_TYPE_MAP = {
     "commands": {
-        "%": CommandType.GlobalSet,
-        "!": CommandType.Run,
-        "$": CommandType.ShellRun
+        "%": TokenType.Command,
+        "!": TokenType.Command,
+        "$": TokenType.Command,
     },
-    "blockInitiator": {
-        '"': BlockType.String,
-        "'": BlockType.String        
+    "blockStart": {
+        '"': TokenType.BlockStart,
+        "'": TokenType.BlockStart,
+        ":": TokenType.BlockStart,
+    },
+    "blockEnd": {
+        '"': TokenType.BlockEnd,
+        "'": TokenType.BlockEnd,
+        ";": TokenType.BlockEnd,
     }
 }
 
-class Verb():
-    def __init__ (self, kind: VerbKind, kindType: LiteralType|CommandType, literalValue: str|int|None = None):
-        self.kind = kind
-        self.kindType = kindType
+def isNumber(string: str):
+    numberable: bool = False
+    try:
+        int(string)
+        numberable = True
+    except ValueError:
+        pass
+    try:
+        float(string)
+        numberable = True
+    except ValueError:
+        pass
+    try:
+        complex(string)
+    except ValueError:
+        pass
 
-        self.literalValue: str|int|None
-
-        if (kindType == LiteralType):
-            self.literalValue = literalValue
-        else:
-            self.literalValue = None
+    return numberable
 
 
-class Parser:
+class Tokenizer:
     def __init__ (self, text: str):
-        self.text = text 
+        self.text = text
+        self.chunks = text.split(" ")
+        self.tokens: list[Token] = []
 
     def getLines(self):
         lines = self.text.splitlines()
         return [line for line in lines if len(line) != 0]
 
-    @staticmethod
-    def getVerbsOfLine(line):
-        chunks = line.split()
-        verbs: list[Verb] = []
+    def getTokens(self):
+        blockType: None|BlockType = None
+        tokens = []
 
-        isFirstChunk = True
-        isInBlock = False
+        for line in self.getLines():
+            isFirstChunk = True
+            lineTokens: list[Token] = []
 
-        for chunk in chunks:
-            verb: Verb
-            if (isFirstChunk):
-                if (chunk in CHUNK_KIND_TYPE_MAP["commands"]):
-                    verb = Verb(VerbKind.Command, CHUNK_KIND_TYPE_MAP["commands"][chunk])
-                isFirstChunk = False
-                
-            # verbs.append(verb)
+            for chunk in line.split(" "):
+                if (isFirstChunk):
+                    if (chunk in CHUNK_TOKEN_TYPE_MAP['commands']):
+                        lineTokens.append(
+                            Token(type=TokenType.Command, text=chunk)
+                        )
+                        continue
+                    isFirstChunk = False
 
+                if (blockType is BlockType.String):
+                    lineTokens.append(
+                        Token(type=TokenType.Literal, text=chunk)
+                    )
+                    continue
 
-        
+                if chunk in CHUNK_TOKEN_TYPE_MAP['blockStart']:
+                    lineTokens.append(
+                        Token(type=TokenType.BlockStart, text=chunk)
+                    )
+                    continue
+                elif chunk in CHUNK_TOKEN_TYPE_MAP['blockEnd']:
+                    lineTokens.append(
+                        Token(type=TokenType.BlockEnd, text=chunk)
+                    )
+                    continue
+                elif isNumber(chunk):
+                    lineTokens.append(
+                        Token(type=TokenType.Literal, text=chunk)
+                    )
+                    continue
+                else:
+                    lineTokens.append(
+                        Token(type=TokenType.Reference, text=chunk)
+                    )
+                    continue
+
+            tokens = [*tokens, *lineTokens]
+        return tokens
 
 code = """
 % yay 0.1
 ! print meta.title
 """
 
-parser = Parser(code)
+tokens: list[Token] = Tokenizer(code).getTokens()
+print([[token.type, token.text] for token in tokens])
