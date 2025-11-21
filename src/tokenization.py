@@ -217,13 +217,3 @@ class Tokenizer:
 
             tokens = [*tokens, *lineTokens]
         return tokens
-
-
-code = """
-% yay 0.1
-! print "meow title"
-% me "duck person"
-"""
-
-tokens: list[Token] = Tokenizer(code).getTokens()
-print([[token.type, token.text] for token in tokens])
