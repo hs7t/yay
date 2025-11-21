@@ -23,16 +23,6 @@ class Token:
         self.text = text
 
 
-class CommandType(Enum):
-    Run = auto()
-    ShellRun = auto()
-    GlobalSet = auto()
-
-
-class LiteralType(Enum):
-    Integer = auto()
-
-
 CHUNK_TOKEN_TYPE_MAP = {
     "commands": {
         "%": TokenType.Command,
