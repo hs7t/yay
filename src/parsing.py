@@ -3,7 +3,7 @@ from enum import Enum, auto
 from typing_extensions import TypedDict, Union
 
 from misc import isNumber
-from tokenization import Token, Tokenizer, TokenType
+from tokenization import Token, TokenType
 
 
 class ParticleType(Enum):
@@ -173,33 +173,3 @@ class Parser:
         ):
             foundInstructions = addInstruction(foundInstructions, currentInstruction)
         return foundInstructions
-
-
-tokens = Tokenizer("""
-    % yay 0.1
-    % title "Example script"
-    % revision 1
-    % supports "meow"
-
-    / the following line will print the title we set above!
-    ! print meta.title
-
-    ! end
-    """).getTokens()
-
-print("\n🔠 Raw tokens:")
-print([(token.type, token.text) for token in tokens])
-
-instructions = Parser(tokens).getInstructions()
-
-print("\n📋 Instructions:")
-for instruction in instructions:
-    print(
-        "- ",
-        [
-            instruction.commandType,
-            instruction.referenceType,
-            instruction.reference,
-            [[argument.type, argument.value] for argument in instruction.arguments],
-        ],
-    )
