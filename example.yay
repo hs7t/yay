@@ -1,7 +1,7 @@
 % yay 0.1
 % title "Example script"
 % revision 1
-% supports *
+% supports '*'
 
 / the following line will print the title we set above!
 ! print meta.title
