@@ -78,6 +78,9 @@ class Tokenizer:
             tokenContent = ""
 
             for chunk in chunks:
+                if not chunk:
+                    continue
+
                 # not on block? skip whitespace chunks
                 if blockStartingTokenType is None and isWhiteSpace(chunk):
                     continue
@@ -122,9 +125,13 @@ class Tokenizer:
 
                 chunkFirstCharIsStringBlockStart = (
                     chunk[0] in CHUNK_TOKEN_TYPE_MAP["stringBlockStart"]
+                    and not wholeChunkIsStringBlockStart
+                    and not wholeChunkIsStringBlockEnd
                 )
                 chunkLastCharIsStringBlockEnd = (
-                    chunk[-1] in CHUNK_TOKEN_TYPE_MAP["stringBlockStart"]
+                    chunk[-1] in CHUNK_TOKEN_TYPE_MAP["stringBlockEnd"]
+                    and not wholeChunkIsStringBlockStart
+                    and not wholeChunkIsStringBlockEnd
                 )
 
                 if wholeChunkIsStringBlockStart and (
@@ -148,13 +155,26 @@ class Tokenizer:
                     blockStartingTokenType = TokenType.StringBlockStart
 
                     foundTokens = []
+
                     foundTokens.append(
                         Token(type=blockStartingTokenType, text=chunk[0])
                     )
-                    foundTokens.append(Token(type=TokenType.Literal, text=chunk[1:]))
-                    lineTokens = [*lineTokens, *foundTokens]
 
+                    if chunkLastCharIsStringBlockEnd:
+                        foundTokens.append(
+                            Token(type=TokenType.Literal, text=chunk[1:-1])
+                        )
+                        foundTokens.append(
+                            Token(type=TokenType.StringBlockEnd, text=chunk[-1])
+                        )
+                        blockStartingTokenType = None
+                    else:
+                        foundTokens.append(
+                            Token(type=TokenType.Literal, text=chunk[1:])
+                        )
+                    lineTokens = [*lineTokens, *foundTokens]
                     continue
+
                 if chunkLastCharIsStringBlockEnd:
                     blockStartingTokenType = None
 
@@ -169,6 +189,7 @@ class Tokenizer:
                         )
                     )
                     lineTokens = [*lineTokens, *foundTokens]
+                    blockStartingTokenType = None
 
                     continue
 
