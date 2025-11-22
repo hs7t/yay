@@ -1,6 +1,8 @@
 from enum import Enum, auto
+from multiprocessing import Value
+from typing import Optional
 
-from typing_extensions import TypedDict
+from typing_extensions import TypedDict, Union
 
 from misc import isNumber
 from tokenization import Token, Tokenizer, TokenType
@@ -38,13 +40,25 @@ COMMANDTOKENTEXT_COMMANDTYPE_MAP = {
 }
 
 
+class ArgumentType(Enum):
+    InstructionSet = auto()
+    StringLiteral = auto()
+    NumberLiteral = auto()
+
+
+class Argument:
+    def __init__(self, type: ArgumentType, value: Union[str, int, list]) -> None:
+        self.type: ArgumentType = type
+        self.value: Union[str, int, list] = value
+
+
 class Instruction:
     def __init__(
         self,
         commandType: CommandType,
         referenceType: ReferenceType | None = None,
         reference: str | None = None,
-        arguments: list = [],
+        arguments: list[Argument] = [],
     ):
         self.commandType = commandType
         self.referenceType = referenceType
@@ -56,7 +70,7 @@ class InstructionConstructionObject(TypedDict):
     commandType: CommandType | None
     referenceType: ReferenceType | None
     referenceValue: str | None
-    arguments: list
+    arguments: list[Argument]
     stringArgumentAccumulation: str | None
 
 
@@ -79,7 +93,10 @@ class Parser:
                 ):
                     if currentInstruction["stringArgumentAccumulation"]:
                         currentInstruction["arguments"].append(
-                            currentInstruction["stringArgumentAccumulation"]
+                            Argument(
+                                value=currentInstruction["stringArgumentAccumulation"],
+                                type=ArgumentType.StringLiteral,
+                            )
                         )
                     foundInstructions.append(
                         Instruction(
@@ -136,7 +153,9 @@ class Parser:
                 and token.type == TokenType.Literal
                 and isNumber(token.text)
             ):
-                currentInstruction["arguments"].append(token.text)
+                currentInstruction["arguments"].append(
+                    Argument(type=ArgumentType.NumberLiteral, value=token.text)
+                )
 
         return foundInstructions
 
@@ -147,18 +166,19 @@ tokens = Tokenizer("""
     % revision 1
     """).getTokens()
 
+print("\n🔠 Raw tokens:")
 print([(token.type, token.text) for token in tokens])
 
 instructions = Parser(tokens).getInstructions()
 
-print(
-    [
+print("\n📋 Instructions:")
+for instruction in instructions:
+    print(
+        "- ",
         [
             instruction.commandType,
             instruction.referenceType,
             instruction.reference,
-            instruction.arguments,
-        ]
-        for instruction in instructions
-    ]
-)
+            [[argument.type, argument.value] for argument in instruction.arguments],
+        ],
+    )
