@@ -1,8 +1,9 @@
 from enum import Enum, auto
 
-from typing_extensions import Optional, TypedDict
+from typing_extensions import TypedDict
 
-from tokenization import Token, TokenType
+from misc import isNumber
+from tokenization import Token, Tokenizer, TokenType
 
 
 class ParticleType(Enum):
@@ -21,6 +22,7 @@ class CommandType(Enum):
 class ReferenceType(Enum):
     Operation = auto()  # like 'print' or 'clone'
     Store = auto()  # such as 'global.name' (or 'name' directly if within SetGlobal)
+    Other = auto()
 
 
 class LiteralType(Enum):
@@ -38,9 +40,14 @@ COMMANDTOKENTEXT_COMMANDTYPE_MAP = {
 
 class Instruction:
     def __init__(
-        self, commandType: CommandType, reference: str, arguments: Optional[list]
+        self,
+        commandType: CommandType,
+        referenceType: ReferenceType | None = None,
+        reference: str | None = None,
+        arguments: list = [],
     ):
         self.commandType = commandType
+        self.referenceType = referenceType
         self.reference = reference
         self.arguments = arguments
 
@@ -49,7 +56,8 @@ class InstructionConstructionObject(TypedDict):
     commandType: CommandType | None
     referenceType: ReferenceType | None
     referenceValue: str | None
-    arguments: str | None
+    arguments: list
+    stringArgumentAccumulation: str | None
 
 
 class Parser:
@@ -58,38 +66,99 @@ class Parser:
 
     def getInstructions(self):
         foundInstructions: list[Instruction] = []
-        currentInstruction: InstructionConstructionObject = {
-            "commandType": None,
-            "referenceType": None,
-            "referenceValue": None,
-            "arguments": None,
-        }
+        currentInstruction: InstructionConstructionObject | None = None
+
+        stringMode = False
 
         for token in self.tokens:
+            # If I run into a command
             if token.type is TokenType.Command:
                 # Start new instruction, push old one to foundInstructions
-                if (
-                    currentInstruction
-                    and currentInstruction["commandType"]
-                    and currentInstruction["referenceType"]
-                    and currentInstruction["referenceValue"]
-                    and currentInstruction["arguments"]
+                if currentInstruction is not None and isinstance(
+                    currentInstruction["commandType"], CommandType
                 ):
+                    if currentInstruction["stringArgumentAccumulation"]:
+                        currentInstruction["arguments"].append(
+                            currentInstruction["stringArgumentAccumulation"]
+                        )
                     foundInstructions.append(
                         Instruction(
                             commandType=currentInstruction["commandType"],
-                            reference=currentInstruction["reference"],
+                            referenceType=currentInstruction["referenceType"],
+                            reference=currentInstruction["referenceValue"],
                             arguments=currentInstruction["arguments"],
                         )
                     )
+                    currentInstruction = None
+
+                # Start a new instruction
+                if currentInstruction is None:
                     currentInstruction = {
-                        "commandType": None,
                         "referenceType": None,
                         "referenceValue": None,
-                        "arguments": None,
+                        "arguments": [],
+                        "commandType": COMMANDTOKENTEXT_COMMANDTYPE_MAP[token.text],
+                        "stringArgumentAccumulation": None,
                     }
 
-                currentInstruction["commandType"] = COMMANDTOKENTEXT_COMMANDTYPE_MAP[
-                    token.text
-                ]
-            pass
+            if not currentInstruction:
+                continue
+
+            # If I run into a reference
+            if token.type is TokenType.Reference:
+                if currentInstruction["commandType"] is CommandType.SetGlobal:
+                    currentInstruction["referenceType"] = ReferenceType.Store
+                    currentInstruction["referenceValue"] = token.text
+                if currentInstruction["commandType"] is CommandType.RunAction:
+                    currentInstruction["referenceType"] = ReferenceType.Operation
+                    currentInstruction["referenceValue"] = token.text
+
+                if currentInstruction["commandType"] is CommandType.ShellEnter:
+                    if currentInstruction["stringArgumentAccumulation"] is None:
+                        currentInstruction["stringArgumentAccumulation"] = ""
+                    currentInstruction["stringArgumentAccumulation"] += token.text
+
+            if token.type is TokenType.StringBlockStart:
+                stringMode = True
+                currentInstruction["stringArgumentAccumulation"] = None  # just in case
+
+            if stringMode and token.type == TokenType.Literal:
+                if not currentInstruction["stringArgumentAccumulation"]:
+                    currentInstruction["stringArgumentAccumulation"] = ""
+
+                currentInstruction["stringArgumentAccumulation"] += token.text
+
+            if token.type is TokenType.StringBlockEnd:
+                stringMode = False
+
+            if (
+                not stringMode
+                and token.type == TokenType.Literal
+                and isNumber(token.text)
+            ):
+                currentInstruction["arguments"].append(token.text)
+
+        return foundInstructions
+
+
+tokens = Tokenizer("""
+    % yay 0.1
+    % title "Example script"
+    % revision 1
+    """).getTokens()
+
+print([(token.type, token.text) for token in tokens])
+
+instructions = Parser(tokens).getInstructions()
+
+print(
+    [
+        [
+            instruction.commandType,
+            instruction.referenceType,
+            instruction.reference,
+            instruction.arguments,
+        ]
+        for instruction in instructions
+    ]
+)
