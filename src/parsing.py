@@ -1,6 +1,4 @@
 from enum import Enum, auto
-from multiprocessing import Value
-from typing import Optional
 
 from typing_extensions import TypedDict, Union
 
@@ -44,6 +42,7 @@ class ArgumentType(Enum):
     InstructionSet = auto()
     StringLiteral = auto()
     NumberLiteral = auto()
+    Reference = auto()
 
 
 class Argument:
@@ -84,27 +83,33 @@ class Parser:
 
         stringMode = False
 
+        def addInstruction(instructions, instruction):
+            if instruction["stringArgumentAccumulation"]:
+                instruction["arguments"].append(
+                    Argument(
+                        value=instruction["stringArgumentAccumulation"],
+                        type=ArgumentType.StringLiteral,
+                    )
+                )
+            instructions.append(
+                Instruction(
+                    commandType=instruction["commandType"],
+                    referenceType=instruction["referenceType"],
+                    reference=instruction["referenceValue"],
+                    arguments=instruction["arguments"],
+                )
+            )
+            return instructions
+
         for token in self.tokens:
             # If I run into a command
             if token.type is TokenType.Command:
-                # Start new instruction, push old one to foundInstructions
+                # Push old instruction into foundInstructions list
                 if currentInstruction is not None and isinstance(
                     currentInstruction["commandType"], CommandType
                 ):
-                    if currentInstruction["stringArgumentAccumulation"]:
-                        currentInstruction["arguments"].append(
-                            Argument(
-                                value=currentInstruction["stringArgumentAccumulation"],
-                                type=ArgumentType.StringLiteral,
-                            )
-                        )
-                    foundInstructions.append(
-                        Instruction(
-                            commandType=currentInstruction["commandType"],
-                            referenceType=currentInstruction["referenceType"],
-                            reference=currentInstruction["referenceValue"],
-                            arguments=currentInstruction["arguments"],
-                        )
+                    foundInstructions = addInstruction(
+                        foundInstructions, currentInstruction
                     )
                     currentInstruction = None
 
@@ -128,13 +133,19 @@ class Parser:
                     currentInstruction["referenceValue"] = token.text
                 if currentInstruction["commandType"] is CommandType.RunAction:
                     currentInstruction["referenceType"] = ReferenceType.Operation
-                    currentInstruction["referenceValue"] = token.text
+                    if not currentInstruction["referenceValue"]:
+                        currentInstruction["referenceValue"] = token.text
+                    else:
+                        currentInstruction["arguments"].append(
+                            Argument(type=ArgumentType.Reference, value=token.text)
+                        )
 
                 if currentInstruction["commandType"] is CommandType.ShellEnter:
                     if currentInstruction["stringArgumentAccumulation"] is None:
                         currentInstruction["stringArgumentAccumulation"] = ""
                     currentInstruction["stringArgumentAccumulation"] += token.text
 
+            # Handle strings
             if token.type is TokenType.StringBlockStart:
                 stringMode = True
                 currentInstruction["stringArgumentAccumulation"] = None  # just in case
@@ -157,6 +168,10 @@ class Parser:
                     Argument(type=ArgumentType.NumberLiteral, value=token.text)
                 )
 
+        if currentInstruction is not None and isinstance(
+            currentInstruction["commandType"], CommandType
+        ):
+            foundInstructions = addInstruction(foundInstructions, currentInstruction)
         return foundInstructions
 
 
@@ -164,6 +179,12 @@ tokens = Tokenizer("""
     % yay 0.1
     % title "Example script"
     % revision 1
+    % supports "meow"
+
+    / the following line will print the title we set above!
+    ! print meta.title
+
+    ! end
     """).getTokens()
 
 print("\n🔠 Raw tokens:")
