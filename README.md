@@ -14,7 +14,7 @@ simple `yay` script:
 
 ! print meta.title
 
-! clone 'git@github.com:hs7t/yay'
+! clone 'https://github.com/hs7t/yay.git'
 ! navto randomrepo
 ```
 
@@ -47,7 +47,7 @@ the version of your script, and `supports` is the OS your script
 supports. (I recommend setting `supports` to `"*"`, a wildcard for all OSes.
 You probably shouldn't use any other values.)
 
-Let's look at some more code:
+Let's look at the next instruction:
 
 ```bash 
 ! print meta.title
@@ -61,7 +61,29 @@ away.
 With `! print meta.title`, we're printing the value of the `meta`
 property `title` to the user's console. Awesome!
 
-## The trampoline
+The next instruction looks like this:
+```bash
+! clone 'https://github.com/hs7t/yay.git'
+```
 
+Which would be equivalent to writing...
+```bash
+$ git clone 'https://github.com/hs7t/yay.git'
+```
+
+Here's something fun - that line above is also a valid `yay`
+instruction! So if you're for some reason using Mercurial, you
+could do something like this:
+```bash
+! print "I'm a happy Mercurial user!"
+$ hg clone 'hg clone https://www.mercurial-scm.org/repo/hg/'
+```
+
+That `$` command we're using is called Shell Run. When the instruction
+`$ hg clone 'hg clone https://www.mercurial-scm.org/repo/hg/'` is run
+the text `hg clone 'hg clone https://www.mercurial-scm.org/repo/hg/`
+will be entered into the shell and run.
+
+## The trampoline
 The `yay` trampoline is multi-platform CLI that reads and runs `yay`
 scripts. It's written in some very messy Python.
