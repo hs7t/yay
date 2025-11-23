@@ -1,0 +1,119 @@
+import os
+import subprocess
+from enum import Enum, auto
+
+import shellingham
+
+
+class ShellType(Enum):
+    PowerShell = auto()
+    Bash = auto()
+    ZShell = auto()
+    GenericPOSIX = auto()
+    WindowsCommandPrompt = auto()
+
+
+class ShellInfo:
+    def __init__(self, path: str, name: ShellType):
+        self.path: str = path
+        self.type: ShellType = name
+
+
+def getShell():
+    shellPath: str
+    shellType: ShellType
+
+    try:
+        shellName, shellPath = shellingham.detect_shell()
+
+        match shellName:
+            case "powershell":
+                shellType = ShellType.PowerShell
+            case "bash":
+                shellType = ShellType.Bash
+            case "cmd":
+                shellType = ShellType.WindowsCommandPrompt
+            case "zsh":
+                shellType = ShellType.ZShell
+            case _:
+                raise shellingham.ShellDetectionFailure
+    except shellingham.ShellDetectionFailure:
+        if os.name == "posix":
+            shellType, shellPath = (ShellType.GenericPOSIX, os.environ["SHELL"])
+        elif os.name == "nt":
+            shellType, shellPath = (
+                ShellType.WindowsCommandPrompt,
+                os.environ["COMSPEC"],
+            )
+        else:
+            raise NotImplementedError(f"OS {os.name!r} is not supported :c")
+    return ShellInfo(shellPath, shellType)
+
+
+def getCommandSeparatorForShellType(shellType: ShellType):
+    match shellType:
+        case (
+            ShellType.PowerShell
+            | ShellType.ZShell
+            | ShellType.Bash
+            | ShellType.GenericPOSIX
+        ):
+            return ";"
+        case ShellType.WindowsCommandPrompt:
+            return "&&"  # why, windows. why.
+
+
+class ComputerProcess:
+    # yeah this should be called ShellProcess
+    # but isn't "Computer" more whimsical?
+
+    def __init__(self):
+        self.shell: ShellInfo = getShell()
+        self.stashedCommands: list[str] = []
+
+    def run(self, command: str):
+        """
+        Runs a command in a new process.
+        """
+        output = subprocess.run(
+            [self.shell.path, command], text=True, capture_output=True
+        )
+
+        print(output)
+        if output.returncode != 0:
+            raise Exception("Error: ", output)
+
+    def stashCommand(self, command: str):
+        """
+        Adds a command to self.stashedCommands.
+        """
+        self.stashedCommands.append(command)
+
+    def clearStashedCommands(self):
+        """
+        Resets self.stashedCommands.
+        """
+        self.stashedCommands = []
+
+    def runStashedCommands(self):
+        """
+        Runs all commands in self.stashedCommands, all in
+        one "line".
+        """
+
+        longCommand = f"{getCommandSeparatorForShellType(self.shell.type)} ".join(
+            self.stashedCommands
+        )
+        print(longCommand)
+
+        self.run(longCommand)
+
+
+computerProcess = ComputerProcess()
+
+print(computerProcess.shell.type)
+
+computerProcess.stashCommand('echo "Hello, world" > hii.txt')
+computerProcess.stashCommand('echo "Greetings" > salutations.txt')
+
+computerProcess.runStashedCommands()

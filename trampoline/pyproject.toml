@@ -1,0 +1,18 @@
+[project]
+name = "trampoline"
+version = "0.1.0"
+description = "A way to run .yay scripts!"
+authors = [
+    {name = "Alí Sinisterra",email = "haidarconh@gmail.com"}
+]
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "shellingham (>=1.5.4,<2.0.0)",
+    "typing-extensions (>=4.15.0,<5.0.0)"
+]
+
+
+[tool.poetry]
+package-mode = false
