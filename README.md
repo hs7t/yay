@@ -80,9 +80,9 @@ $ hg clone 'hg clone https://www.mercurial-scm.org/repo/hg/'
 ```
 
 That `$` command we're using is called Shell Run. When the instruction
-`$ hg clone 'hg clone https://www.mercurial-scm.org/repo/hg/'` is run
-the text `hg clone 'hg clone https://www.mercurial-scm.org/repo/hg/`
-will be entered into the shell and run.
+`$ hg clone "https://www.mercurial-scm.org/repo/hg/"` is run,
+`hg clone "https://www.mercurial-scm.org/repo/hg/"` will be passed to 
+the shell. Nice!
 
 ## The trampoline
 The `yay` trampoline is multi-platform CLI that reads and runs `yay`
