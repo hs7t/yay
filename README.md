@@ -1,0 +1,61 @@
+# `yay` 0.1
+
+`yay` is a format for easily defining cross-platform scripts. It's
+extremely easy to write and not that useful right now.
+
+`yay` scripts are based on instructions. This is an example of a 
+simple `yay` script:
+
+```bash
+% yay 0.1
+% title "Example script"
+% revision 1
+% supports '*'
+
+! print meta.title
+
+! clone 'git@github.com:hs7t/yay'
+! navto randomrepo
+```
+
+Let's walk through it.
+
+These four instructions define a few `meta` values:
+```bash
+% yay 0.1
+% title "Example script"
+% revision 1
+% supports '*'
+```
+
+That `%` is a **command**. All instructions start with a command,
+and the Set Global/`%` command is used for definitions. `% yay 0.1` sets the
+value of the `meta` property `yay` to a number, `0.1`. In
+Javascript, that would be something like this:
+
+```javascript
+meta.yay = 0.1
+```
+
+Isn't that neat?
+
+These values we just set are useful for the `yay` **trampoline** 
+(runner - more on that later).
+`meta.yay` sets the version of `yay` we're using (for compatibility
+purposes). `meta.title` is the name of your script, `revision` is
+the version of your script, and `supports` is the OS your script
+supports. (I recommend setting this to `'*'`, a wildcard for all OSes.
+You probably shouldn't use any other values.)
+
+Let's look at some more code:
+
+```bash 
+! print meta.title
+```
+
+This is another command! Run Action/`!` runs an action. It's the core
+of this whole thing. Many commands are different in different shells.
+`yay` lets you write instructions once and takes care of the rest.
+
+With `! print meta.title`, we're printing the value of the `meta`
+property `title` to the user's console. Awesome!
