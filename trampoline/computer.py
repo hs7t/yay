@@ -26,24 +26,23 @@ def getShell():
     return ShellInfo(shellPath, shellName)
 
 
-class Computer:
-    # yeah this should be called Shell
+class ComputerProcess:
+    # yeah this should be called ShellProcess
     # but isn't "Computer" more whimsical?
 
     def __init__(self):
         self.shell: ShellInfo = getShell()
         self.stashedCommands: list[str] = []
-        self.process = subprocess.Popen(
-            [self.shell.path], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True
-        )
 
     def run(self, command: str):
         """
-        Runs a command in self.process.
+        Runs a command in a new process.
         """
-        (output, error) = self.process.communicate(input=command)
-        if error:
-            raise Exception("Error in terminal")
+        output = subprocess.run(command, shell=True, text=True, capture_output=True)
+
+        print(output)
+        if output.returncode != 0:
+            raise Exception("Error: ", output)
 
     def stashCommand(self, command: str):
         """
@@ -59,22 +58,19 @@ class Computer:
 
     def runStashedCommands(self):
         """
-        Runs all commands in self.stashedCommands, one after the
-        other, in self.process.
+        Runs all commands in self.stashedCommands, all in
+        one "line".
         """
-        for command in self.stashedCommands:
-            self.run(command)
 
-    def murder(self):
-        """
-        Kills self.process. Ouch.
-        """
-        self.process.kill()
+        longCommand = f" {os.linesep}".join(self.stashedCommands)
+        print(longCommand)
+
+        self.run(longCommand)
 
 
-computer = Computer()
+computerProcess = ComputerProcess()
 
-computer.stashCommand('echo "Hello, world" > hii.txt')
-computer.stashCommand('echo "Greetings" > salutation.txt')
+computerProcess.stashCommand('echo "Hello, world" > hii.txt')
+computerProcess.stashCommand('echo "Greetings" > salutations.txt')
 
-computer.runStashedCommands()
+computerProcess.runStashedCommands()
