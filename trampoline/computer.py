@@ -1,39 +1,66 @@
 import os
 import subprocess
+from enum import Enum, auto
 
 import shellingham
 
 
+class ShellType(Enum):
+    PowerShell = auto()
+    Bash = auto()
+    ZShell = auto()
+    GenericPOSIX = auto()
+    WindowsCommandPrompt = auto()
+
+
 class ShellInfo:
-    def __init__(self, path: str, name: str):
+    def __init__(self, path: str, name: ShellType):
         self.path: str = path
-        self.name: str = name
+        self.type: ShellType = name
 
 
 def getShell():
     shellPath: str
-    shellName: str
+    shellType: ShellType
 
     try:
         shellName, shellPath = shellingham.detect_shell()
+
+        match shellName:
+            case "powershell":
+                shellType = ShellType.PowerShell
+            case "bash":
+                shellType = ShellType.Bash
+            case "cmd":
+                shellType = ShellType.WindowsCommandPrompt
+            case "zsh":
+                shellType = ShellType.ZShell
+            case _:
+                raise shellingham.ShellDetectionFailure
     except shellingham.ShellDetectionFailure:
         if os.name == "posix":
-            shellName, shellPath = ("unknown_posix", os.environ["SHELL"])
+            shellType, shellPath = (ShellType.GenericPOSIX, os.environ["SHELL"])
         elif os.name == "nt":
-            shellName, shellPath = ("unknown_nt", os.environ["COMSPEC"])
+            shellType, shellPath = (
+                ShellType.WindowsCommandPrompt,
+                os.environ["COMSPEC"],
+            )
         else:
             raise NotImplementedError(f"OS {os.name!r} is not supported :c")
-    return ShellInfo(shellPath, shellName)
+    return ShellInfo(shellPath, shellType)
 
 
-def getCommandSeparatorForShellName(shellName: str):
-    match shellName:
-        case "powershell":
+def getCommandSeparatorForShellType(shellType: ShellType):
+    match shellType:
+        case (
+            ShellType.PowerShell
+            | ShellType.ZShell
+            | ShellType.Bash
+            | ShellType.GenericPOSIX
+        ):
             return ";"
-        case "unknown_posix":
-            return ";"
-        case "unknown_nt":
-            return "&&"
+        case ShellType.WindowsCommandPrompt:
+            return "&&"  # why, windows. why.
 
 
 class ComputerProcess:
@@ -74,7 +101,7 @@ class ComputerProcess:
         one "line".
         """
 
-        longCommand = f"{getCommandSeparatorForShellName(self.shell.name)} ".join(
+        longCommand = f"{getCommandSeparatorForShellType(self.shell.type)} ".join(
             self.stashedCommands
         )
         print(longCommand)
@@ -84,7 +111,7 @@ class ComputerProcess:
 
 computerProcess = ComputerProcess()
 
-print(computerProcess.shell.name)
+print(computerProcess.shell.type)
 
 computerProcess.stashCommand('echo "Hello, world" > hii.txt')
 computerProcess.stashCommand('echo "Greetings" > salutations.txt')
