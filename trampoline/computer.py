@@ -15,15 +15,25 @@ def getShell():
     shellName: str
 
     try:
-        shellPath, shellName = shellingham.detect_shell()
+        shellName, shellPath = shellingham.detect_shell()
     except shellingham.ShellDetectionFailure:
         if os.name == "posix":
-            shellPath, shellName = ("unknown", os.environ["SHELL"])
+            shellName, shellPath = ("unknown_posix", os.environ["SHELL"])
         elif os.name == "nt":
-            shellPath, shellName = ("unknown", os.environ["COMSPEC"])
+            shellName, shellPath = ("unknown_nt", os.environ["COMSPEC"])
         else:
             raise NotImplementedError(f"OS {os.name!r} is not supported :c")
     return ShellInfo(shellPath, shellName)
+
+
+def getCommandSeparatorForShellName(shellName: str):
+    match shellName:
+        case "powershell":
+            return ";"
+        case "unknown_posix":
+            return ";"
+        case "unknown_nt":
+            return "&&"
 
 
 class ComputerProcess:
@@ -38,7 +48,9 @@ class ComputerProcess:
         """
         Runs a command in a new process.
         """
-        output = subprocess.run(command, shell=True, text=True, capture_output=True)
+        output = subprocess.run(
+            [self.shell.path, command], text=True, capture_output=True
+        )
 
         print(output)
         if output.returncode != 0:
@@ -62,13 +74,17 @@ class ComputerProcess:
         one "line".
         """
 
-        longCommand = f" {os.linesep}".join(self.stashedCommands)
+        longCommand = f"{getCommandSeparatorForShellName(self.shell.name)} ".join(
+            self.stashedCommands
+        )
         print(longCommand)
 
         self.run(longCommand)
 
 
 computerProcess = ComputerProcess()
+
+print(computerProcess.shell.name)
 
 computerProcess.stashCommand('echo "Hello, world" > hii.txt')
 computerProcess.stashCommand('echo "Greetings" > salutations.txt')
