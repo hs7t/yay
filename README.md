@@ -3,7 +3,7 @@
 `yay` is a format for easily defining cross-platform scripts. It's
 extremely easy to write and not that useful right now.
 
-`yay` scripts are based on instructions. This is an example of a 
+`yay` scripts are based on **instructions**. This is an example of a 
 simple `yay` script:
 
 ```bash
@@ -25,7 +25,7 @@ These four instructions define a few `meta` values:
 % yay 0.1
 % title "Example script"
 % revision 1
-% supports '*'
+% supports "*"
 ```
 
 That `%` is a **command**. All instructions start with a command,
@@ -40,11 +40,11 @@ meta.yay = 0.1
 Isn't that neat?
 
 These values we just set are useful for the `yay` **trampoline** 
-(runner - more on that later).
+(in less silly words, *runner* - more on that [later](#the-trampoline)).
 `meta.yay` sets the version of `yay` we're using (for compatibility
 purposes). `meta.title` is the name of your script, `revision` is
 the version of your script, and `supports` is the OS your script
-supports. (I recommend setting this to `'*'`, a wildcard for all OSes.
+supports. (I recommend setting `supports` to `"*"`, a wildcard for all OSes.
 You probably shouldn't use any other values.)
 
 Let's look at some more code:
@@ -55,7 +55,13 @@ Let's look at some more code:
 
 This is another command! Run Action/`!` runs an action. It's the core
 of this whole thing. Many commands are different in different shells.
-`yay` lets you write instructions once and takes care of the rest.
+`yay` makes supporting more platforms easier by abstracting the shell
+away.
 
 With `! print meta.title`, we're printing the value of the `meta`
 property `title` to the user's console. Awesome!
+
+## The trampoline
+
+The `yay` trampoline is multi-platform CLI that reads and runs `yay`
+scripts. It's written in some very messy Python.
