@@ -26,10 +26,9 @@ def c_print(shellType, string):
 
 def c_navto(shellType, path: str):
     match shellType:
-        case ShellType.PowerShell:
-            return f"Set-Location {path}"
         case (
             ShellType.Bash
+            | ShellType.PowerShell
             | ShellType.GenericPOSIX
             | ShellType.ZShell
             | ShellType.WindowsCommandPrompt
