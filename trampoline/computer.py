@@ -54,13 +54,15 @@ from computer import ShellType
 
 
 class MultiShellCommand:
-    def __init__(self, powerShell, bash, zShell, genericPosix, windowsCommandPrompt) -> None:
+    def __init__(
+        self, powerShell, bash, zShell, genericPosix, windowsCommandPrompt
+    ) -> None:
         self._powerShell = powerShell
         self._bash = bash
         self._zShell = zShell
         self._genericPosix = genericPosix
         self._windowsCommandPrompt = windowsCommandPrompt
-    
+
     def getForShellType(self, shellType: ShellType):
         match shellType:
             case ShellType.PowerShell:
@@ -132,13 +134,3 @@ class ComputerProcess:
         print(longCommand)
 
         self.run(longCommand)
-
-
-computerProcess = ComputerProcess()
-
-print(computerProcess.shell.type)
-
-computerProcess.stashCommand('echo "Hello, world" > hii.txt')
-computerProcess.stashCommand('echo "Greetings" > salutations.txt')
-
-computerProcess.runStashedCommands()
