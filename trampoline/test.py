@@ -30,3 +30,12 @@ for instruction in instructions:
             [[argument.type, argument.value] for argument in instruction.arguments],
         ],
     )
+
+# computerProcess = ComputerProcess()
+
+# print(computerProcess.shell.type)
+
+# computerProcess.stashCommand('echo "Hello, world" > hii.txt')
+# computerProcess.stashCommand('echo "Greetings" > salutations.txt')
+
+# computerProcess.runStashedCommands()
