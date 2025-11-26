@@ -100,3 +100,50 @@ It currently supports:
 - Windows Command Prompt
 - POSIX shell
 - Z shell
+
+
+### Hop on! 
+
+#### Downloading a binary
+Grab yourself a binary from the [Releases](https://github.com/hs7t/yay/releases/latest/) 
+tab. They're available:
+
+- for Linux (x86-64 / arm64): `trampoline-linux-[x86_64 or arm64]`
+- for macOS: `trampoline-macos-[arm64 or x86_64]`
+- for Windows: `trampoline-windows-[x86_64 or arm64].exe`
+
+> [!TIP]
+> Not sure what you need? If you're running Windows or Linux, your
+  device is most likely to work with the x86_64 version (unless you're
+  using a Snapdragon processor or something). If you're on an Apple Silicon 
+  (M1, M2, M3...) Mac, choose the arm64 binary.
+
+##### Linux and Mac
+Before you can run the binary you just downloaded on Linux or your Mac, 
+you have to mark it as an executable. From your terminal, run this command:
+```bash
+chmod +x binary     # for example, chmod +x trampoline-macos-arm64
+```
+
+#### Optional: Update your PATH
+Follow these steps:
+
+1. Move the binary into its own folder (wherever you want - not Downloads!)
+2. Run a command appropriate for your OS:
+    - macOS (zsh):
+        ```bash
+        export PATH="$PATH:/path/to/folder"
+        source ~/.zshrc
+        ```
+    - Linux (bash):
+        ```bash
+        export PATH="$PATH:/path/to/folder"
+        source ~/.bashrc    # or ~/.profile, depending on your shell
+        ```
+    - Windows (PowerShell)
+        ```powershell
+        [Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\path\to\folder", "User")
+        ```
+> [!TIP]
+> Try renaming the binary to `yay` (or `yay.exe` on Windows)
+  to use it by just typing `yay`!
