@@ -30,7 +30,7 @@ jobs:
           poetry install
       - name: Build binary
         run: |
-          poetry run pyinstaller --onefile trampoline/main.py
+          poetry run pyinstaller --onefile main.py
 
       - name: Rename binaries
         run: |
