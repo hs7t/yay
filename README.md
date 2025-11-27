@@ -1,3 +1,5 @@
+![The yay logo](assets/yay.svg)
+
 # `yay` 0.1
 
 `yay` is a format for easily defining cross-platform scripts. It's
