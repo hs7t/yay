@@ -5,6 +5,8 @@
 `yay` is a format for easily defining cross-platform scripts. It's
 extremely easy to write and not that useful right now.
 
+[![asciicast](https://asciinema.org/a/OSiEvhDNa8ckVGT5iu5CWq9ks.svg)](https://asciinema.org/a/OSiEvhDNa8ckVGT5iu5CWq9ks)
+
 `yay` scripts are based on **instructions**. This is an example of a
 simple `yay` script:
 
