@@ -1,4 +1,9 @@
-% yay 0.1
+/ example.yay
+/ This file describes what a yay v0.2 file should look like.
+/ It uses features not currently supported by the trampoline.
+
+
+% yay 0.2
 % title "Example script"
 % revision 1
 % supports '*'
