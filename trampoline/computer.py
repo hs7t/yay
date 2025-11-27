@@ -106,16 +106,21 @@ class ComputerProcess:
         match self.shell.type:
             case ShellType.PowerShell:
                 output = subprocess.run(
-                    [self.shell.path, "-Command", command], text=True, capture_output=True
+                    [self.shell.path, "-Command", command],
+                    text=True,
+                    capture_output=True,
                 )
+                print(output.stdout)
             case ShellType.WindowsCommandPrompt:
                 output = subprocess.run(
                     [self.shell.path, "/c", command], text=True, capture_output=True
                 )
+                print(output.stdout)
             case ShellType.Bash | ShellType.ZShell | ShellType.GenericPOSIX | _:
                 output = subprocess.run(
                     [self.shell.path, "-c", command], text=True, capture_output=True
                 )
+                print(output.stdout)
 
         if output.returncode != 0:
             raise Exception("Error: ", output)
@@ -141,6 +146,5 @@ class ComputerProcess:
         longCommand = f"{getCommandSeparatorForShellType(self.shell.type)} ".join(
             self.stashedCommands
         )
-        print(longCommand)
 
         self.run(longCommand)
