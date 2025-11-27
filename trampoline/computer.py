@@ -37,7 +37,7 @@ def getShell():
                 shellType = ShellType.ZShell
             case _:
                 raise shellingham.ShellDetectionFailure
-    except shellingham.ShellDetectionFailure:
+    except Exception:
         if os.name == "posix":
             shellType, shellPath = (ShellType.GenericPOSIX, os.environ["SHELL"])
         elif os.name == "nt":
