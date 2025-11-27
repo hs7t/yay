@@ -14,7 +14,7 @@ simple `yay` script:
 % revision 1
 % supports '*'
 
-! print meta.title
+! print "Hello, world!"
 
 ! clone 'https://github.com/hs7t/yay.git'
 ! navto randomrepo
@@ -53,7 +53,7 @@ You probably shouldn't use any other values.)
 Let's look at the next instruction:
 
 ```bash
-! print meta.title
+! print "Hello, world!"
 ```
 
 This is another command! Run Action/`!` runs an action. It's the core
@@ -61,8 +61,8 @@ of this whole thing. Many commands are different in different shells.
 `yay` makes supporting more platforms easier by abstracting the shell
 away.
 
-With `! print meta.title`, we're printing the value of the `meta`
-property `title` to the user's console. Awesome!
+With `! print "Hello, world!"`, we're printing the string "Hello, world!" 
+to the user's console. Awesome!
 
 The next instruction looks like this:
 
